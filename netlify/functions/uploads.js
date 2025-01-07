@@ -4,32 +4,52 @@ const path = require('path');
 const UPLOAD_DIR = path.resolve(__dirname, '../../uploads');
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'POST') {
-    // Handle file upload
-    const data = Buffer.from(event.body, 'base64');
-    const filename = event.headers['x-file-name'] || `file_${Date.now()}.txt`;
-    const filePath = path.join(UPLOAD_DIR, filename);
+  try {
+    if (event.httpMethod === 'POST') {
+      // Log request details
+      console.log('POST Request received');
+      console.log('Headers:', event.headers);
+      console.log('Body:', event.body);
 
-    try {
+      // Check if the body contains a file
+      if (!event.body || !event.isBase64Encoded) {
+        console.error('No file in request body');
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'No file provided or invalid request format' }),
+        };
+      }
+
+      const data = Buffer.from(event.body, 'base64');
+      const filename = event.headers['x-file-name'] || `file_${Date.now()}.txt`;
+      const filePath = path.join(UPLOAD_DIR, filename);
+
+      // Ensure upload directory exists
+      if (!fs.existsSync(UPLOAD_DIR)) {
+        fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+      }
+
       fs.writeFileSync(filePath, data);
+      console.log(`File uploaded successfully: ${filename}`);
       return {
         statusCode: 200,
         body: JSON.stringify({ message: 'File uploaded successfully', filename }),
       };
-    } catch (err) {
-      return { statusCode: 500, body: JSON.stringify({ error: 'Failed to save file' }) };
     }
-  }
 
-  if (event.httpMethod === 'GET') {
-    // Return list of uploaded files
-    try {
+    if (event.httpMethod === 'GET') {
+      // List files in the upload directory
+      console.log('GET Request received');
+      if (!fs.existsSync(UPLOAD_DIR)) {
+        return { statusCode: 200, body: JSON.stringify([]) };
+      }
       const files = fs.readdirSync(UPLOAD_DIR);
       return { statusCode: 200, body: JSON.stringify(files) };
-    } catch (err) {
-      return { statusCode: 500, body: JSON.stringify({ error: 'Failed to read files' }) };
     }
-  }
 
-  return { statusCode: 405, body: 'Method Not Allowed' };
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  } catch (error) {
+    console.error('Error:', error);
+    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+  }
 };
