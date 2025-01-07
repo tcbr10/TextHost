@@ -3,56 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>File Uploader</title>
+  <title>Upload and View Files</title>
 </head>
 <body>
   <h1>Upload and View Files</h1>
-  <form id="uploadForm" enctype="multipart/form-data">
-    <input type="file" id="fileInput" />
-    <button type="button" onclick="uploadFile()">Upload</button>
+
+  <!-- File Upload Form -->
+  <h2>Upload a File</h2>
+  <form id="upload-form">
+    <input type="file" id="file-input" required>
+    <button type="submit">Upload</button>
   </form>
+  <p id="upload-status"></p>
+
+  <!-- File Viewer -->
   <h2>Uploaded Files</h2>
-  <ul id="fileList"></ul>
+  <ul id="file-list"></ul>
 
   <script>
     const API_URL = 'https://snazzy-stroopwafel-c31ef8.netlify.app/.netlify/functions/uploads'; // Update this after deployment.
 
-    // Upload file via Fetch API
-    async function uploadFile() {
-      const fileInput = document.getElementById('fileInput');
-      if (fileInput.files.length === 0) return alert('Please select a file!');
+    // Fetch and display uploaded files
+    async function fetchFiles() {
+      try {
+        const response = await fetch(API_URL);
+        const files = await response.json();
 
-      const formData = new FormData();
-      formData.append('file', fileInput.files[0]);
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = '';
 
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        alert('File uploaded successfully!');
-        fetchFiles();
-      } else {
-        alert('Failed to upload file.');
+        files.forEach(file => {
+          const listItem = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = `${API_URL}?file=${file}`;
+          link.textContent = file;
+          link.target = '_blank';
+          listItem.appendChild(link);
+          fileList.appendChild(listItem);
+        });
+      } catch (error) {
+        console.error('Error fetching files:', error);
       }
     }
 
-    // Fetch and display file list
-    async function fetchFiles() {
-      const response = await fetch(API_URL);
-      const files = await response.json();
+    // Handle file upload
+    document.getElementById('upload-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
 
-      const fileList = document.getElementById('fileList');
-      fileList.innerHTML = '';
-      files.forEach((file) => {
-        const li = document.createElement('li');
-        li.textContent = file;
-        fileList.appendChild(li);
-      });
-    }
+      const fileInput = document.getElementById('file-input');
+      const file = fileInput.files[0];
 
-    // Fetch files on page load
+      if (!file) {
+        alert('Please select a file to upload.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadStatus = document.getElementById('upload-status');
+      uploadStatus.textContent = 'Uploading...';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'x-file-name': file.name
+          },
+          body: await file.arrayBuffer(),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          uploadStatus.textContent = `File "${file.name}" uploaded successfully.`;
+          fetchFiles(); // Refresh file list
+        } else {
+          uploadStatus.textContent = `Failed to upload: ${result.error}`;
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        uploadStatus.textContent = 'Error uploading file. See console for details.';
+      } finally {
+        fileInput.value = ''; // Reset the input
+      }
+    });
+
+    // Load files on page load
     fetchFiles();
   </script>
 </body>
