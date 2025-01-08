@@ -7,10 +7,15 @@ exports.handler = async (event) => {
   if (event.httpMethod === "POST") {
     const fileName = event.headers["x-file-name"]; // Get file name from headers
     const filePath = path.join(tmpDir, fileName);
+    const metadataPath = path.join(tmpDir, `${fileName}.meta`); // Metadata file for timestamp
 
     try {
       // Save the uploaded file
       fs.writeFileSync(filePath, event.body, "utf8");
+
+      // Save metadata (timestamp)
+      const metadata = { uploadedAt: new Date().toISOString() };
+      fs.writeFileSync(metadataPath, JSON.stringify(metadata), "utf8");
 
       return {
         statusCode: 200,
@@ -55,11 +60,22 @@ exports.handler = async (event) => {
 
     // List all files if no specific file is requested
     try {
-      const files = fs.readdirSync(tmpDir);
+      const files = fs.readdirSync(tmpDir).filter((file) => !file.endsWith(".meta")); // Ignore metadata files
+      const filesWithMetadata = files.map((file) => {
+        const metadataPath = path.join(tmpDir, `${file}.meta`);
+        let uploadedAt = null;
+
+        if (fs.existsSync(metadataPath)) {
+          const metadata = JSON.parse(fs.readFileSync(metadataPath, "utf8"));
+          uploadedAt = metadata.uploadedAt;
+        }
+
+        return { name: file, uploadedAt };
+      });
 
       return {
         statusCode: 200,
-        body: JSON.stringify(files),
+        body: JSON.stringify(filesWithMetadata),
       };
     } catch (error) {
       console.error("Error listing files:", error);
