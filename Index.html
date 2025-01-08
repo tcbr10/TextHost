@@ -4,51 +4,45 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>File Upload and Viewer</title>
-  <!-- NextUI CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/nextui/2.0.0-beta/nextui.min.css" integrity="sha384-R5fdYALtv90AKQklBY0oeM5QvuhvHoTk8ZDhZnMCFGhxvGSbNH3UdRh6doDVgBkz" crossorigin="anonymous">
+  
+  <!-- UnoCSS Runtime CDN -->
+  <script src="https://unpkg.com/@unocss/runtime"></script>
+  
   <style>
+    /* Optionally, add global styles */
     body {
-      font-family: "Inter", sans-serif;
-      margin: 20px;
+      font-family: Arial, sans-serif;
       line-height: 1.6;
-      background-color: #f9f9f9;
-    }
-    #fileList a {
-      text-decoration: none;
-      color: #007BFF;
-    }
-    #fileList a:hover {
-      text-decoration: underline;
     }
   </style>
 </head>
-<body>
-  <div class="container">
-    <h1 class="text-4xl font-bold mb-5 text-center">File Upload and Viewer</h1>
+<body class="min-h-screen flex flex-col items-center bg-gray-50 p-6">
 
-    <!-- File Upload Form -->
-    <div class="flex flex-col items-center">
-      <form id="uploadForm" class="w-full max-w-md flex items-center gap-4">
-        <input 
-          type="file" 
-          id="fileInput" 
-          class="w-full p-2 border rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" 
-        />
-        <button 
-          type="submit" 
-          class="bg-blue-500 text-white px-4 py-2 rounded-md shadow-md hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-        >
-          Upload
-        </button>
-      </form>
-    </div>
+  <!-- Header -->
+  <h1 class="text-3xl font-bold text-blue-600 mb-6">File Upload and Viewer</h1>
 
-    <h2 class="text-2xl font-semibold mt-10 mb-5 text-center">Uploaded Files</h2>
-    <div id="fileList" class="bg-white rounded-lg shadow-md p-5">
-      Loading...
-    </div>
+  <!-- File Upload Form -->
+  <form id="uploadForm" class="flex flex-col gap-4 items-center w-full max-w-md p-6 bg-white shadow-md rounded-lg">
+    <input 
+      type="file" 
+      id="fileInput" 
+      class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+    />
+    <button 
+      type="submit" 
+      class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+    >
+      Upload
+    </button>
+  </form>
+
+  <!-- File List Section -->
+  <div class="w-full max-w-md mt-8 bg-white p-6 shadow-md rounded-lg">
+    <h2 class="text-xl font-semibold text-gray-700 mb-4">Uploaded Files</h2>
+    <div id="fileList" class="text-gray-500">Loading...</div>
   </div>
 
+  <!-- JavaScript -->
   <script>
     const API_URL = "https://snazzy-stroopwafel-c31ef8.netlify.app/.netlify/functions/uploads";
 
@@ -68,7 +62,7 @@
               link.href = `${API_URL}?file=${file}`; // Add ?file=filename to URL
               link.textContent = file;
               link.target = "_blank"; // Open in a new tab
-              link.className = "text-blue-500 hover:text-blue-700 underline";
+              link.className = "text-blue-500 hover:underline"; // UnoCSS styles
               fileList.appendChild(link);
               fileList.appendChild(document.createElement("br"));
             });
@@ -92,9 +86,6 @@
       }
 
       const file = fileInput.files[0];
-      const formData = new FormData();
-      formData.append("file", file);
-
       fetch(API_URL, {
         method: "POST",
         headers: {
