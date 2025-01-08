@@ -3,36 +3,48 @@ const path = require("path");
 
 exports.handler = async (event) => {
   if (event.httpMethod === "POST") {
-    const fileName = event.headers["x-file-name"];
-    const uploadsDir = path.join(__dirname, "../../uploads");
+    const fileName = event.headers["x-file-name"]; // Get the file name from headers
+    const tmpDir = "/tmp"; // Use the /tmp directory
+    const filePath = path.join(tmpDir, fileName); // Full file path in /tmp
 
-    // Ensure the uploads directory exists
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    try {
+      // Save the file in /tmp
+      fs.writeFileSync(filePath, event.body, "utf8");
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ message: `File "${fileName}" uploaded successfully.` }),
+      };
+    } catch (error) {
+      console.error("Error writing file:", error);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Failed to save file." }),
+      };
     }
-
-    // Save the file
-    const filePath = path.join(uploadsDir, fileName);
-    const fileData = event.body;
-
-    fs.writeFileSync(filePath, fileData, "utf8"); // Save as plain text
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: `File ${fileName} uploaded successfully.` }),
-    };
   }
 
   if (event.httpMethod === "GET") {
-    // List uploaded files
-    const uploadsDir = path.join(__dirname, "../../uploads");
-    const files = fs.readdirSync(uploadsDir);
-    return {
-      statusCode: 200,
-      body: JSON.stringify(files),
-    };
+    const tmpDir = "/tmp"; // Use the /tmp directory
+
+    try {
+      // List files in /tmp
+      const files = fs.readdirSync(tmpDir);
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify(files),
+      };
+    } catch (error) {
+      console.error("Error reading files:", error);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Failed to list files." }),
+      };
+    }
   }
 
+  // Handle unsupported methods
   return {
     statusCode: 405,
     body: "Method Not Allowed",
