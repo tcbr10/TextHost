@@ -43,73 +43,86 @@
   </div>
 
   <!-- JavaScript -->
-  <script>
-    const API_URL = "https://snazzy-stroopwafel-c31ef8.netlify.app/.netlify/functions/uploads";
+ <script>
+  const API_URL = "https://snazzy-stroopwafel-c31ef8.netlify.app/.netlify/functions/uploads";
 
-    // Fetch and display the list of uploaded files
-    function fetchFiles() {
-      fetch(API_URL)
-        .then((response) => response.json())
-        .then((files) => {
-          const fileList = document.getElementById("fileList");
-          fileList.innerHTML = ""; // Clear previous list
+  // Fetch and display the list of uploaded files
+  function fetchFiles() {
+    fetch(API_URL)
+      .then((response) => response.json())
+      .then((files) => {
+        const fileList = document.getElementById("fileList");
+        fileList.innerHTML = ""; // Clear previous list
 
-          if (files.length === 0) {
-            fileList.textContent = "No files uploaded yet.";
-          } else {
-            files.forEach((file) => {
-              const link = document.createElement("a");
-              link.href = `${API_URL}?file=${file}`; // Add ?file=filename to URL
-              link.textContent = file;
-              link.target = "_blank"; // Open in a new tab
-              link.className = "text-blue-500 hover:underline"; // UnoCSS styles
-              fileList.appendChild(link);
-              fileList.appendChild(document.createElement("br"));
-            });
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching file list:", error);
-          document.getElementById("fileList").textContent =
-            "Failed to load files. Please try again later.";
-        });
+        if (files.length === 0) {
+          fileList.textContent = "No files uploaded yet.";
+        } else {
+          files.forEach((file) => {
+            const container = document.createElement("div");
+
+            const link = document.createElement("a");
+            link.href = `${API_URL}?file=${file.name}`; // Add ?file=filename to URL
+            link.textContent = file.name;
+            link.target = "_blank"; // Open in a new tab
+
+            const timestamp = document.createElement("span");
+            timestamp.style.marginLeft = "10px";
+            timestamp.style.color = "#555";
+            timestamp.textContent = file.uploadedAt
+              ? ` (Uploaded: ${new Date(file.uploadedAt).toLocaleString()})`
+              : " (Uploaded: Unknown)";
+
+            container.appendChild(link);
+            container.appendChild(timestamp);
+            fileList.appendChild(container);
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching file list:", error);
+        document.getElementById("fileList").textContent =
+          "Failed to load files. Please try again later.";
+      });
+  }
+
+  // Handle file uploads
+  document.getElementById("uploadForm").addEventListener("submit", (event) => {
+    event.preventDefault(); // Prevent form from reloading the page
+    const fileInput = document.getElementById("fileInput");
+
+    if (!fileInput.files.length) {
+      alert("Please select a file to upload.");
+      return;
     }
 
-    // Handle file uploads
-    document.getElementById("uploadForm").addEventListener("submit", (event) => {
-      event.preventDefault(); // Prevent form from reloading the page
-      const fileInput = document.getElementById("fileInput");
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
 
-      if (!fileInput.files.length) {
-        alert("Please select a file to upload.");
-        return;
-      }
-
-      const file = fileInput.files[0];
-      fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "x-file-name": file.name,
-        },
-        body: file,
+    fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "x-file-name": file.name,
+      },
+      body: file,
+    })
+      .then((response) => {
+        if (response.ok) {
+          alert(`File "${file.name}" uploaded successfully.`);
+          fileInput.value = ""; // Clear the file input
+          fetchFiles(); // Refresh the file list
+        } else {
+          alert("Failed to upload file. Please try again.");
+        }
       })
-        .then((response) => {
-          if (response.ok) {
-            alert(`File "${file.name}" uploaded successfully.`);
-            fileInput.value = ""; // Clear the file input
-            fetchFiles(); // Refresh the file list
-          } else {
-            alert("Failed to upload file. Please try again.");
-          }
-        })
-        .catch((error) => {
-          console.error("Error uploading file:", error);
-          alert("An error occurred while uploading the file.");
-        });
-    });
+      .catch((error) => {
+        console.error("Error uploading file:", error);
+        alert("An error occurred while uploading the file.");
+      });
+  });
 
-    // Fetch the initial list of files on page load
-    fetchFiles();
-  </script>
+  // Fetch the initial list of files on page load
+  fetchFiles();
+</script>
 </body>
 </html>
